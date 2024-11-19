@@ -1,6 +1,8 @@
 from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.widgets import PolygonSelector, Button
+from matplotlib.path import Path
 
 
 def convert_to_binary(image_array, threshold):
@@ -26,6 +28,142 @@ def convert_to_binary(image_array, threshold):
     return binary_image
 
 
+
+    """
+    Let the user draw a polygon around an ROI and mask the outside region.
+
+    Parameters:
+    - image_array: NumPy array of the image (can be grayscale or RGB).
+    - background_value: Pixel value to set outside the ROI.
+
+    Returns:
+    - masked_image: Image array with the outside region set to the background.
+    """
+    # Display the image for interactive selection
+    fig, ax = plt.subplots()
+    ax.imshow(image_array, interpolation='nearest')
+
+    # Store the polygon vertices
+    vertices = []
+
+    # Function to capture polygon vertices
+    def onselect(vertices_local):
+        nonlocal vertices
+        vertices = vertices_local
+
+    # Create a PolygonSelector widget
+    selector = PolygonSelector(ax, onselect)
+
+    # Wait for the user to finish drawing
+    print("Draw a polygon around the area of interest and press ENTER.")
+    plt.show()
+
+    # Check if vertices were drawn
+    if not vertices:
+        print("No ROI selected.")
+        return image_array
+
+    # Create a mask based on the polygon
+    path = Path(vertices)
+    h, w = image_array.shape[:2]
+    y, x = np.mgrid[:h, :w]
+    points = np.vstack((x.ravel(), y.ravel())).T
+    mask = path.contains_points(points).reshape(h, w)
+
+    # Apply mask to the image
+    masked_image = np.where(mask[..., None], image_array, background_value)
+
+    return masked_image
+
+def draw_roi_and_mask(image_array, background_value=0):
+    """
+    Let the user draw a polygon around an ROI and mask the outside region with a button press.
+
+    Parameters:
+    - image_array: NumPy array of the image (can be grayscale or RGB).
+    - background_value: Pixel value to set outside the ROI.
+
+    Returns:
+    - None
+    """
+    # Store the polygon vertices
+    vertices = []
+    masked_image = None
+
+    # Callback for PolygonSelector
+    def onselect(verts):
+        nonlocal vertices
+        vertices = verts
+
+    # Callback for the button
+    def on_button_click(event):
+        nonlocal masked_image
+        if not vertices:
+            print("No ROI selected. Draw a polygon first!")
+            return
+
+        # Create a mask from the polygon
+        path = Path(vertices)
+        h, w = image_array.shape[:2]
+        y, x = np.mgrid[:h, :w]
+        points = np.vstack((x.ravel(), y.ravel())).T
+        mask = path.contains_points(points).reshape(h, w)
+
+        # Apply the mask to the image
+        if image_array.ndim == 3:  # RGB image
+            masked_image = np.where(mask[..., None], image_array, background_value)
+        else:  # Grayscale image
+            masked_image = np.where(mask, image_array, background_value)
+
+        # Close the current figure
+        plt.close()
+
+        # Display the new masked image with buttons
+        fig, ax = plt.subplots()
+        plt.subplots_adjust(bottom=0.2)
+        ax.imshow(masked_image, interpolation='nearest')
+        ax.set_title("Masked Image")
+
+        # Add "Redo" button
+        ax_redo_button = plt.axes([0.1, 0.05, 0.2, 0.075])
+        redo_button = Button(ax_redo_button, 'Redo')
+
+        def on_redo(event):
+            plt.close()  # Close the current image
+            draw_roi_and_mask(image_array)  # Restart the process
+
+        redo_button.on_clicked(on_redo)
+
+        # Add "Find Length" button
+        ax_find_length_button = plt.axes([0.7, 0.05, 0.2, 0.075])
+        find_length_button = Button(ax_find_length_button, 'Find Length')
+
+        def on_find_length(event):
+            print("Find Length button clicked. (Implementation pending)")
+
+        find_length_button.on_clicked(on_find_length)
+
+        plt.show()
+
+
+
+    # Plot the image and setup PolygonSelector
+    fig, ax = plt.subplots()
+    ax.imshow(image_array, interpolation='nearest')
+    selector = PolygonSelector(ax, onselect)
+
+    # Add a button
+    ax_button = plt.axes([0.8, 0.05, 0.1, 0.075])  # Position of the button [x, y, width, height]
+    button = Button(ax_button, 'Apply Mask')
+    button.on_clicked(on_button_click)
+
+    print("Draw a polygon around the area of interest, then click 'Apply Mask' to proceed.")
+    plt.show()
+
+    return masked_image
+
+
+
 def show_image(image_array):
     '''
     Display image using matplotlib.
@@ -33,11 +171,16 @@ def show_image(image_array):
     Parameters:
     - image_array: NumPy array of the image (can be grayscale or RGB)
     '''
+    
     plt.imshow(image_array, interpolation='nearest')
     plt.show()
 
 
+
+
+
 # Import test data
+
 def main():
     image_path = "./data/easy/24708.1_1 at 20x.jpg"
     image = Image.open(image_path)
@@ -45,9 +188,10 @@ def main():
     # Convert to numpy array
     image_array = np.array(image)
     binary_image_array = convert_to_binary(image_array, 200)
-    show_image(binary_image_array)
 
-    print("Image shape:", binary_image_array.shape)
+    # Allow the user to draw an ROI and mask the image
+    # draw_roi_and_mask(binary_image_array, background_value=255)
+    draw_roi_and_mask(binary_image_array) 
 
 
 main()
