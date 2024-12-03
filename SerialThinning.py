@@ -191,7 +191,7 @@ def show_image(image_array):
 # Import test data
 
 def main():
-    image_path = "./data/easy/24708.1_3 at 20x.jpg"
+    image_path = "data/hard/472.1B.1_5&6.jpg"
     image = Image.open(image_path)
 
     # Convert to numpy array
