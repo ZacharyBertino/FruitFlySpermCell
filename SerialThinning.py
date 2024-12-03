@@ -3,6 +3,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.widgets import PolygonSelector, Button
 from matplotlib.path import Path
+# from scipy.ndimage import label
+
 
 
 def convert_to_binary(image_array, threshold):
@@ -95,7 +97,6 @@ def draw_roi_and_mask(image_array, background_value=0):
         nonlocal vertices
         vertices = verts
 
-    # Callback for the button
     def on_button_click(event):
         nonlocal masked_image
         if not vertices:
@@ -115,14 +116,20 @@ def draw_roi_and_mask(image_array, background_value=0):
         else:  # Grayscale image
             masked_image = np.where(mask, image_array, background_value)
 
+        # Convert the masked image to binary
+        # grayscale = np.mean(masked_image, axis=2).astype(np.uint8)
+        # percentile = 90
+        # binary_image = np.percentile(grayscale, percentile)
+        binary_image = convert_to_binary(masked_image, threshold=200)
+
         # Close the current figure
         plt.close()
 
-        # Display the new masked image with buttons
+        # Display the binary thresholded image
         fig, ax = plt.subplots()
         plt.subplots_adjust(bottom=0.2)
-        ax.imshow(masked_image, interpolation='nearest')
-        ax.set_title("Masked Image")
+        ax.imshow(binary_image, cmap='gray', interpolation='nearest')
+        ax.set_title("Thresholded Binary Image")
 
         # Add "Redo" button
         ax_redo_button = plt.axes([0.1, 0.05, 0.2, 0.075])
@@ -131,6 +138,8 @@ def draw_roi_and_mask(image_array, background_value=0):
         def on_redo(event):
             plt.close()  # Close the current image
             draw_roi_and_mask(image_array)  # Restart the process
+
+
 
         redo_button.on_clicked(on_redo)
 
@@ -182,7 +191,7 @@ def show_image(image_array):
 # Import test data
 
 def main():
-    image_path = "./data/easy/24708.1_1 at 20x.jpg"
+    image_path = "./data/easy/24708.1_3 at 20x.jpg"
     image = Image.open(image_path)
 
     # Convert to numpy array
