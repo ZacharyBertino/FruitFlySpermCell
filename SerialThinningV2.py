@@ -4,9 +4,40 @@ from matplotlib import pyplot as plt
 from matplotlib.widgets import PolygonSelector, Button
 from matplotlib.path import Path
 from scipy.ndimage import label
+import cv2
 
+def get_largest_connected_component(binary_image):
+    """
+    Identifies the largest connected component in a binary image.
 
-def convert_to_binary(image_array, threshold):
+    Parameters:
+    - binary_image: NumPy array of the binary image (values are 0 or 255).
+
+    Returns:
+    - largest_component: Binary image with the largest connected component all 255 and everything else all 0.
+    """
+    # Ensure format
+    binary_image = (binary_image > 0).astype(np.uint8)
+
+    # Label connected components
+    labeled_array, num_features = label(binary_image)
+
+    # If there are no components, return an empty image
+    if num_features == 0:
+        return np.zeros_like(binary_image, dtype=np.uint8)
+
+    # Find the largest component
+    component_sizes = np.bincount(labeled_array.ravel())
+    component_sizes[0] = 0  # Ignore the background
+    largest_component_label = component_sizes.argmax()
+
+    # Create a binary mask for the largest component
+    largest_component = (
+        labeled_array == largest_component_label).astype(np.uint8) * 255
+
+    return largest_component
+
+def convert_to_binary(mask, image_array, threshold):
     """
     Convert an image array to a binary image based on the threshold.
 
@@ -18,15 +49,25 @@ def convert_to_binary(image_array, threshold):
     - binary_image: Binary image as a NumPy array (values are 0 or 255)
     """
     # Convert to grayscale (if needed)
+  
+
     if len(image_array.shape) == 3:
-        grayscale = np.mean(image_array, axis=2)
+        grayscale = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
     else:
         grayscale = image_array
 
-    # Threshold image
-    binary_image = np.where(grayscale > threshold, 255, 0).astype(np.uint8)
+    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    # contrastImage = clahe.apply(grayscale)
+    
 
-    return binary_image
+    # Apply Otsu's thresholding
+    # _, binary_image = cv2.threshold(grayscale, 160, 255, cv2.THRESH_BINARY)
+    # _, binary_image = cv2.threshold(grayscale, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    binary_image = cv2.adaptiveThreshold(grayscale, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, 1)
+
+    masked_image = np.where(mask, binary_image, 0)
+
+    return get_largest_connected_component(masked_image)
 
 
 def display(img):
@@ -79,16 +120,10 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
             mask = path.contains_points(points).reshape(h, w)
 
         # Apply the mask to the image
-        if image_array.ndim == 3:
-            # RGB image
-            masked_image = np.where(
-                mask[..., None], image_array, background_value)
-        else:
-            # Grayscale image
-            masked_image = np.where(mask, image_array, background_value)
+        
 
         # Convert masked image to binary
-        binary_image = convert_to_binary(masked_image, threshold)
+        binary_image = convert_to_binary(mask, image_array, threshold)
 
         # Close the current figure
         plt.close()
@@ -134,12 +169,13 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
 
 
 def main():
-    image_path = "./data/hard/472.1B.1_5&6.jpg"
+    image_path = "data/hard/472.1A.1_4.jpg"
     image = Image.open(image_path)
     image = np.array(image)
 
     # Allow the user to draw an ROI and mask the image
-    draw_roi_and_mask(image, 200)
+    print(np.min(image))
+    draw_roi_and_mask(image, 190)
 
 
 main()

@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.widgets import PolygonSelector, Button
 from matplotlib.path import Path
-# from scipy.ndimage import label
+import cv2
 
 
 
@@ -20,12 +20,12 @@ def convert_to_binary(image_array, threshold):
     """
     # Convert to grayscale (if needed)
     if len(image_array.shape) == 3:
-        grayscale = np.mean(image_array, axis=2)
+        grayscale = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
     else:
         grayscale = image_array
 
-    # Threshold image
-    binary_image = np.where(grayscale > threshold, 255, 0).astype(np.uint8)
+    # Apply Otsu's thresholding
+    _, binary_image = cv2.threshold(grayscale, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     return binary_image
 
@@ -191,7 +191,7 @@ def show_image(image_array):
 # Import test data
 
 def main():
-    image_path = "data/hard/472.1B.1_5&6.jpg"
+    image_path = "data/easy/24708.1_2 at 20X.jpg"
     image = Image.open(image_path)
 
     # Convert to numpy array
