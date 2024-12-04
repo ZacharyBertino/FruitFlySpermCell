@@ -9,95 +9,6 @@ from matplotlib.widgets import CheckButtons
 
 import cv2
 
-def calculate_length(thinned_image, pixels_per_micrometer=3.06):
-    """
-    Calculate the length of a skeletonized line in micrometers.
-
-    Parameters:
-    - thinned_image: Binary image of the thinned skeleton.
-    - pixels_per_micrometer: Conversion factor from pixels to micrometers.
-
-    Returns:
-    - length_in_micrometers: Length of the skeleton in micrometers.
-    """
-    # Count the number of foreground pixels in the thinned skeleton
-    pixel_count = np.sum(thinned_image > 0)  # Count non-zero pixels
-
-    # Convert pixel count to micrometers
-    length_in_micrometers = pixel_count / pixels_per_micrometer
-
-    return length_in_micrometers / ((1 + np.sqrt(2)) / 2)
-
-
-def _thinningIteration(im, iter):
-    """Perform one iteration of thinning using vectorized operations."""
-    rows, cols = im.shape
-    P = np.zeros((rows, cols, 8), dtype=np.uint8)
-
-    # Neighbors: P2 to P9
-    P[:, :, 0] = np.roll(im, shift=-1, axis=0)  # P2
-    P[:, :, 1] = np.roll(np.roll(im, shift=-1, axis=0), shift=1, axis=1)  # P3
-    P[:, :, 2] = np.roll(im, shift=1, axis=1)  # P4
-    P[:, :, 3] = np.roll(np.roll(im, shift=1, axis=0), shift=1, axis=1)  # P5
-    P[:, :, 4] = np.roll(im, shift=1, axis=0)  # P6
-    P[:, :, 5] = np.roll(np.roll(im, shift=1, axis=0), shift=-1, axis=1)  # P7
-    P[:, :, 6] = np.roll(im, shift=-1, axis=1)  # P8
-    P[:, :, 7] = np.roll(np.roll(im, shift=-1, axis=0), shift=-1, axis=1)  # P9
-
-    # Calculate A (number of 0->1 transitions in neighbors)
-    transitions = ((P[:, :, :-1] == 0) & (P[:, :, 1:] == 1)).sum(axis=2) + (
-        (P[:, :, -1] == 0) & (P[:, :, 0] == 1)
-    )
-    # Calculate B (number of 1s in neighbors)
-    neighbors_sum = P.sum(axis=2)
-
-    # Masks for conditions
-    m1 = (P[:, :, 0] * P[:, :, 2] * P[:, :, 4] if iter ==
-          0 else P[:, :, 0] * P[:, :, 2] * P[:, :, 6])
-    m2 = (P[:, :, 2] * P[:, :, 4] * P[:, :, 6] if iter ==
-          0 else P[:, :, 0] * P[:, :, 4] * P[:, :, 6])
-
-    # Conditions for marking pixels for removal
-    remove = (
-        (im == 1) &  # Only consider foreground pixels
-        (transitions == 1) &
-        (2 <= neighbors_sum) & (neighbors_sum <= 6) &
-        (m1 == 0) &
-        (m2 == 0)
-    )
-
-    # Remove marked pixels
-    return im & ~remove
-
-
-def thinning(src):
-    """Perform Zhang-Suen thinning on a binary image."""
-    dst = src // 255  # Convert to binary 0/1
-    prev = np.zeros_like(dst, dtype=np.uint8)
-    iteration = 0
-
-    while True:
-        print(f"Starting iteration {iteration}...")
-        initial_pixels = np.sum(dst)
-
-        dst = _thinningIteration(dst, 0)
-        print(f"Completed sub-iteration 0 of iteration {iteration}.")
-        dst = _thinningIteration(dst, 1)
-        print(f"Completed sub-iteration 1 of iteration {iteration}.")
-
-        removed_pixels = initial_pixels - np.sum(dst)
-        print(f"Iteration {iteration}: {removed_pixels} pixels removed.")
-
-        if np.array_equal(dst, prev):  # Stop if no change
-            print(
-                f"No changes detected. Thinning complete after {iteration} iterations.")
-            break
-
-        prev = dst.copy()
-        iteration += 1
-
-    return dst * 255  # Convert back to 0/255
-
 def get_largest_connected_components(binary_image, n):
     """
     Identifies the top n largest connected components in a binary image.
@@ -292,8 +203,7 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
 
     def display_with_controls(binary_image, mask):
         """
-        Display the binary image and add controls to adjust the number of components,
-        use custom thresholds, and allow cutting regions.
+        Display the binary image and add controls to adjust the number of components.
         """
         fig, ax = display(binary_image)
 
@@ -302,12 +212,10 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         n_textbox = TextBox(ax_textbox_n, 'Num Components', initial=str(n_components[0]))
         n_textbox.on_submit(update_n_components)
 
-        # Add a text box for threshold
         ax_textbox_thresh = plt.axes([0.1, 0.15, 0.2, 0.075])
         threshold_textbox = TextBox(ax_textbox_thresh, 'Threshold', initial=str(custom_threshold[0]))
         threshold_textbox.on_submit(update_threshold)
 
-        # Add a checkbox for using custom thresholds
         ax_checkbox = plt.axes([0.7, 0.25, 0.2, 0.1])
         checkbox = CheckButtons(ax_checkbox, ["Use Custom Threshold"], use_custom_threshold)
         checkbox.on_clicked(toggle_custom_threshold)
@@ -327,7 +235,7 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
 
         def on_undo(event):
             plt.close()
-            draw_roi_and_mask(image_array_base, threshold, background_value)
+            draw_roi_and_mask(image_array, threshold, background_value)
 
         undo_button.on_clicked(on_undo)
 
@@ -336,66 +244,18 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         find_length_button = Button(ax_find_length_button, 'Find Length')
 
         def on_find_length(event):
-            thinned_image = thinning(binary_image)
-            leng = calculate_length(thinned_image)
-            print(f"The sperm cell is {leng} micrometers")
+            print("Find Length button clicked. (Implementation pending)")
 
         find_length_button.on_clicked(on_find_length)
 
-        # Add "Cut" button
-        ax_cut_button = plt.axes([0.4, 0.15, 0.2, 0.075])
-        cut_button = Button(ax_cut_button, 'Cut')
-
-        def on_cut(event):
-            # Close the current display to allow polygon selection
-            plt.close()
-
-            # Display the current image for polygon selection
-            fig, ax = display(binary_image)
-            vertices = []
-
-            def onselect(verts):
-                nonlocal vertices
-                vertices = verts
-
-            selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'}) 
-
-
-            def on_done(event):
-                if vertices:
-
-                    # Create a mask from the polygon
-                    path = Path(vertices)
-                    h, w = binary_image.shape[:2]
-                    y, x = np.mgrid[:h, :w]
-                    points = np.vstack((x.ravel(), y.ravel())).T
-                    polygon_mask = path.contains_points(points).reshape(h, w)
-
-                    # Update the mask to remove the polygon region
-                    binary_image[polygon_mask] = False
-    
-
-                plt.close()
-                display_with_controls(binary_image, polygon_mask)
-
-            # Add "Done" button to confirm the polygon
-            ax_done_button = plt.axes([0.7, 0.05, 0.2, 0.075])
-            done_button = Button(ax_done_button, 'Done')
-            done_button.on_clicked(on_done)
-
-            plt.show()
-
-        cut_button.on_clicked(on_cut)
-
         plt.show()
-
 
     def on_mask_button_click(event):
         redraw_with_new_params()
 
     # Plot the image and setup PolygonSelector
     fig, ax = display(image_array)
-    selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'})
+    selector = PolygonSelector(ax, onselect)
 
     # Add a text box to input the number of components
     ax_textbox_n = plt.axes([0.1, 0.05, 0.2, 0.075])
@@ -477,8 +337,9 @@ def unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, strength=2.0):
     return sharpened_image
 
 def main():
-    image_path = "data/hard/472.1A.1_1.jpg"
+    # image_path = "data/medium/24708.1_6 at 20X.jpg" 
     #1_4
+    image_path = "data/medium/24708.1_6 at 20X.jpg" 
     # image_path = "data/hard/472.1A.1_1.jpg"
     image = Image.open(image_path)
     image = np.array(image)
