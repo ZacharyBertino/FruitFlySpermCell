@@ -308,22 +308,22 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         fig, ax = display(binary_image)
 
         # Add a text box to input the number of components
-        ax_textbox_n = plt.axes([0.4, 0.05, 0.2, 0.075])
-        n_textbox = TextBox(ax_textbox_n, 'Num Components', initial=str(n_components[0]))
+        ax_textbox_n = plt.axes([0.915, 0.2, 0.075, 0.075])
+        n_textbox = TextBox(ax_textbox_n, 'Components ', initial=str(n_components[0]))
         n_textbox.on_submit(update_n_components)
 
         # Add a text box for threshold
-        ax_textbox_thresh = plt.axes([0.1, 0.15, 0.2, 0.075])
-        threshold_textbox = TextBox(ax_textbox_thresh, 'Threshold', initial=str(custom_threshold[0]))
+        ax_textbox_thresh = plt.axes([0.14, 0.2, 0.1, 0.075])
+        threshold_textbox = TextBox(ax_textbox_thresh, 'Threshold ', initial=str(custom_threshold[0]))
         threshold_textbox.on_submit(update_threshold)
 
         # Add a checkbox for using custom thresholds
-        ax_checkbox = plt.axes([0.7, 0.25, 0.2, 0.1])
+        ax_checkbox = plt.axes([0.01, 0.05, 0.35, 0.1])
         checkbox = CheckButtons(ax_checkbox, ["Use Custom Threshold"], use_custom_threshold)
         checkbox.on_clicked(toggle_custom_threshold)
 
         # Add "Enter" button to reapply the function
-        ax_enter_button = plt.axes([0.7, 0.05, 0.2, 0.075])
+        ax_enter_button = plt.axes([0.4, 0.05, 0.2, 0.1])
         enter_button = Button(ax_enter_button, 'Enter')
 
         def on_enter(event):
@@ -332,7 +332,7 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         enter_button.on_clicked(on_enter)
 
         # Add "Undo" button
-        ax_undo_button = plt.axes([0.1, 0.05, 0.2, 0.075])
+        ax_undo_button = plt.axes([0.05, 0.85, 0.15, 0.075])
         undo_button = Button(ax_undo_button, 'Undo')
 
         def on_undo(event):
@@ -342,7 +342,7 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         undo_button.on_clicked(on_undo)
 
         # Add "Find Length" button
-        ax_find_length_button = plt.axes([0.7, 0.15, 0.2, 0.075])
+        ax_find_length_button = plt.axes([0.82, 0.85, 0.15, 0.075])
         find_length_button = Button(ax_find_length_button, 'Find Length')
 
         def on_find_length(event):
@@ -354,7 +354,7 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         find_length_button.on_clicked(on_find_length)
 
         # Add "Cut" button
-        ax_cut_button = plt.axes([0.4, 0.15, 0.2, 0.075])
+        ax_cut_button = plt.axes([0.62, 0.05, 0.35, 0.1])
         cut_button = Button(ax_cut_button, 'Cut')
 
         def on_cut(event):
@@ -408,23 +408,23 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
     fig, ax = display(image_array)
     selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'})
 
-    # Add a text box to input the number of components
-    ax_textbox_n = plt.axes([0.65, 0.05, 0.15, 0.075])
-    n_textbox = TextBox(ax_textbox_n, 'Components', initial=str(n_components[0]))
-    n_textbox.on_submit(update_n_components)
+    # # Add a text box to input the number of components
+    # ax_textbox_n = plt.axes([0.65, 0.05, 0.15, 0.075])
+    # n_textbox = TextBox(ax_textbox_n, 'Components', initial=str(n_components[0]))
+    # n_textbox.on_submit(update_n_components)
 
-    # Add a text box to input the threshold
-    ax_textbox_thresh = plt.axes([0.35, 0.05, 0.15, 0.075])
-    threshold_textbox = TextBox(ax_textbox_thresh, 'Thresh', initial=str(custom_threshold[0]))
-    threshold_textbox.on_submit(update_threshold)
+    # # Add a text box to input the threshold
+    # ax_textbox_thresh = plt.axes([0.35, 0.05, 0.15, 0.075])
+    # threshold_textbox = TextBox(ax_textbox_thresh, 'Thresh', initial=str(custom_threshold[0]))
+    # threshold_textbox.on_submit(update_threshold)
 
-    # Add a checkbox to toggle custom thresholding
-    ax_checkbox = plt.axes([0.02, 0.05, 0.23, 0.075])
-    checkbox = CheckButtons(ax_checkbox, ["Custom Thresh"], use_custom_threshold)
-    checkbox.on_clicked(toggle_custom_threshold)
+    # # Add a checkbox to toggle custom thresholding
+    # ax_checkbox = plt.axes([0.02, 0.05, 0.23, 0.075])
+    # checkbox = CheckButtons(ax_checkbox, ["Custom Thresh"], use_custom_threshold)
+    # checkbox.on_clicked(toggle_custom_threshold)
 
     # Apply mask button
-    mask_button = plt.axes([0.8, 0.05, 0.15, 0.075])
+    mask_button = plt.axes([0.4, 0.05, 0.2, 0.075])
     mask_button = Button(mask_button, 'Apply Mask')
     mask_button.on_clicked(on_mask_button_click)
 
