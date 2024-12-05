@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+import sys
 from matplotlib import pyplot as plt
 from matplotlib.widgets import PolygonSelector, Button
 from matplotlib.path import Path
@@ -8,6 +9,11 @@ from matplotlib.widgets import TextBox
 from matplotlib.widgets import CheckButtons
 
 import cv2
+
+def closeBinary(binary_image):
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
+    res = cv2.morphologyEx(binary_image,cv2.MORPH_CLOSE,kernel)
+    return res
 
 def calculate_length(thinned_image, pixels_per_micrometer=3.06):
     """
@@ -26,7 +32,7 @@ def calculate_length(thinned_image, pixels_per_micrometer=3.06):
     # Convert pixel count to micrometers
     length_in_micrometers = pixel_count / pixels_per_micrometer
 
-    return length_in_micrometers / ((1 + np.sqrt(2)) / 2)
+    return length_in_micrometers
 
 
 def _thinningIteration(im, iter):
@@ -72,6 +78,7 @@ def _thinningIteration(im, iter):
 
 def thinning(src):
     """Perform Zhang-Suen thinning on a binary image."""
+
     dst = src // 255  # Convert to binary 0/1
     prev = np.zeros_like(dst, dtype=np.uint8)
     iteration = 0
@@ -191,6 +198,9 @@ def convert_to_binary(mask, image_array, threshold=None, n_components=1):
 
     # Apply mask and keep the top n components
     masked_image = np.where(mask, binary_image, 0)
+
+
+
     return get_largest_connected_components(masked_image, n_components)
 
 
@@ -336,7 +346,8 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
         find_length_button = Button(ax_find_length_button, 'Find Length')
 
         def on_find_length(event):
-            thinned_image = thinning(binary_image)
+            closed_image = closeBinary(binary_image)
+            thinned_image = thinning(closed_image)
             leng = calculate_length(thinned_image)
             print(f"The sperm cell is {leng} micrometers")
 
@@ -398,22 +409,22 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
     selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'})
 
     # Add a text box to input the number of components
-    ax_textbox_n = plt.axes([0.1, 0.05, 0.2, 0.075])
-    n_textbox = TextBox(ax_textbox_n, 'Num Components', initial=str(n_components[0]))
+    ax_textbox_n = plt.axes([0.65, 0.05, 0.15, 0.075])
+    n_textbox = TextBox(ax_textbox_n, 'Components', initial=str(n_components[0]))
     n_textbox.on_submit(update_n_components)
 
     # Add a text box to input the threshold
-    ax_textbox_thresh = plt.axes([0.4, 0.05, 0.2, 0.075])
-    threshold_textbox = TextBox(ax_textbox_thresh, 'Threshold', initial=str(custom_threshold[0]))
+    ax_textbox_thresh = plt.axes([0.35, 0.05, 0.15, 0.075])
+    threshold_textbox = TextBox(ax_textbox_thresh, 'Thresh', initial=str(custom_threshold[0]))
     threshold_textbox.on_submit(update_threshold)
 
     # Add a checkbox to toggle custom thresholding
-    ax_checkbox = plt.axes([0.7, 0.15, 0.2, 0.1])
-    checkbox = CheckButtons(ax_checkbox, ["Use Custom Threshold"], use_custom_threshold)
+    ax_checkbox = plt.axes([0.02, 0.05, 0.23, 0.075])
+    checkbox = CheckButtons(ax_checkbox, ["Custom Thresh"], use_custom_threshold)
     checkbox.on_clicked(toggle_custom_threshold)
 
     # Apply mask button
-    mask_button = plt.axes([0.7, 0.05, 0.2, 0.075])
+    mask_button = plt.axes([0.8, 0.05, 0.15, 0.075])
     mask_button = Button(mask_button, 'Apply Mask')
     mask_button.on_clicked(on_mask_button_click)
 
@@ -477,7 +488,11 @@ def unsharp_mask(image, kernel_size=(5, 5), sigma=1.0, strength=2.0):
     return sharpened_image
 
 def main():
-    image_path = "data/hard/472.1A.1_1.jpg"
+    if len(sys.argv) < 1:
+        print("Usage: python SerialThinningV2.py <filename>")
+
+    image_path = sys.argv[1]
+    # image_path = "data/hard/472.1A.1_3.jpg"
     #1_4
     # image_path = "data/hard/472.1A.1_1.jpg"
     image = Image.open(image_path)
