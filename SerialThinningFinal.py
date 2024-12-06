@@ -37,6 +37,7 @@ def calculate_length(thinned_image, pixels_per_micrometer=3.06):
 
 def _thinningIteration(im, iter):
     """Perform one iteration of thinning using vectorized operations."""
+
     rows, cols = im.shape
     P = np.zeros((rows, cols, 8), dtype=np.uint8)
 
@@ -138,37 +139,6 @@ def get_largest_connected_components(binary_image, n):
 
     return top_components
 
-def get_largest_connected_component(binary_image):
-    """
-    Identifies the largest connected component in a binary image.
-
-    Parameters:
-    - binary_image: NumPy array of the binary image (values are 0 or 255).
-
-    Returns:
-    - largest_component: Binary image with the largest connected component all 255 and everything else all 0.
-    """
-    # Ensure format
-    binary_image = (binary_image > 0).astype(np.uint8)
-
-    # Label connected components
-    labeled_array, num_features = label(binary_image)
-
-    # If there are no components, return an empty image
-    if num_features == 0:
-        return np.zeros_like(binary_image, dtype=np.uint8)
-
-    # Find the largest component
-    component_sizes = np.bincount(labeled_array.ravel())
-    component_sizes[0] = 0  # Ignore the background
-    largest_component_label = component_sizes.argmax()
-
-    # Create a binary mask for the largest component
-    largest_component = (
-        labeled_array == largest_component_label).astype(np.uint8) * 255
-
-    return largest_component
-
 def convert_to_binary(mask, image_array, threshold=None, n_components=1):
     """
     Convert an image array to a binary image based on the threshold.
@@ -187,8 +157,6 @@ def convert_to_binary(mask, image_array, threshold=None, n_components=1):
     else:
         grayscale = image_array
 
-    print(threshold)
-
     if threshold is not None:
         # Manual thresholding
         _, binary_image = cv2.threshold(grayscale, threshold, 255, cv2.THRESH_BINARY)
@@ -198,8 +166,6 @@ def convert_to_binary(mask, image_array, threshold=None, n_components=1):
 
     # Apply mask and keep the top n components
     masked_image = np.where(mask, binary_image, 0)
-
-
 
     return get_largest_connected_components(masked_image, n_components)
 
@@ -256,7 +222,6 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
             print("Invalid threshold input. Ignoring.")
 
     def update_n_components(text):
-        print("in")
         """
         Update the number of components to retain based on user input.
         """
@@ -371,7 +336,6 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
 
             selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'}) 
 
-
             def on_done(event):
                 if vertices:
 
@@ -385,7 +349,6 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
                     # Update the mask to remove the polygon region
                     binary_image[polygon_mask] = False
     
-
                 plt.close()
                 display_with_controls(binary_image, polygon_mask)
 
@@ -408,21 +371,6 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
     fig, ax = display(image_array)
     selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'})
 
-    # # Add a text box to input the number of components
-    # ax_textbox_n = plt.axes([0.65, 0.05, 0.15, 0.075])
-    # n_textbox = TextBox(ax_textbox_n, 'Components', initial=str(n_components[0]))
-    # n_textbox.on_submit(update_n_components)
-
-    # # Add a text box to input the threshold
-    # ax_textbox_thresh = plt.axes([0.35, 0.05, 0.15, 0.075])
-    # threshold_textbox = TextBox(ax_textbox_thresh, 'Thresh', initial=str(custom_threshold[0]))
-    # threshold_textbox.on_submit(update_threshold)
-
-    # # Add a checkbox to toggle custom thresholding
-    # ax_checkbox = plt.axes([0.02, 0.05, 0.23, 0.075])
-    # checkbox = CheckButtons(ax_checkbox, ["Custom Thresh"], use_custom_threshold)
-    # checkbox.on_clicked(toggle_custom_threshold)
-
     # Apply mask button
     mask_button = plt.axes([0.4, 0.05, 0.2, 0.075])
     mask_button = Button(mask_button, 'Apply Mask')
@@ -432,8 +380,6 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
     plt.show()
 
     return masked_image
-
-
 
 
 def preprocessing(image):
@@ -492,9 +438,6 @@ def main():
         print("Usage: python SerialThinningV2.py <filename>")
 
     image_path = sys.argv[1]
-    # image_path = "data/hard/472.1A.1_3.jpg"
-    #1_4
-    # image_path = "data/hard/472.1A.1_1.jpg"
     image = Image.open(image_path)
     image = np.array(image)
     preppedImage = preprocessing(image)
@@ -503,11 +446,4 @@ def main():
     # Allow the user to draw an ROI and mask the image
     draw_roi_and_mask(image, 190)
 
-
 main()
-
-
-#take all components of certain size? Take largerst percentage and see if they connect?
-#Have use trace it. Every point they make take largest closest component, then combine them all
-#User can threshold based on scale if too much noise.
-#
