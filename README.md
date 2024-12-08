@@ -6,6 +6,8 @@ Follow these steps to run the measurement tool with your image file as input:
    Open your terminal and clone this repository to your local machine:
 
    > git clone https://github.com/ZacharyBertino/FruitFlySpermCell.git
+   
+   If the command line window says the directory already exists, skip this step and proceed to step 2.
 
 2. **Navigate to the Repository Directory**  
    Change into the directory where the repository was cloned:
