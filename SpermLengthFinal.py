@@ -337,6 +337,8 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
             selector = PolygonSelector(ax, onselect, props={'markersize': 8, 'markerfacecolor': 'blue'}) 
 
             def on_done(event):
+
+                polygon_mask = None
                 if vertices:
 
                     # Create a mask from the polygon
@@ -345,11 +347,13 @@ def draw_roi_and_mask(image_array, threshold, background_value=0):
                     y, x = np.mgrid[:h, :w]
                     points = np.vstack((x.ravel(), y.ravel())).T
                     polygon_mask = path.contains_points(points).reshape(h, w)
+                    
 
                     # Update the mask to remove the polygon region
                     binary_image[polygon_mask] = False
     
                 plt.close()
+
                 display_with_controls(binary_image, polygon_mask)
 
             # Add "Done" button to confirm the polygon
