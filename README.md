@@ -17,7 +17,7 @@ Follow these steps to run the measurement tool with your image file as input:
 
    > pip install pillow "numpy>=1.16.5,<1.23.0" matplotlib scipy opencv-python
 
-   If additional dependencies are required, they will be listed in the script's import statements. Install them in the same manner.
+   If additional dependencies are required, errors in your command line window will indicate this. Install them in the same manner.
 
 4. **Run the Script**  
    Use the following command to run `SpermLengthFinal.py`, replacing `'path/to/your/image.jpg'` with the file path to your image. Be sure to include the file path in single quotes:
