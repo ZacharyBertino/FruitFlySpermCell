@@ -15,7 +15,7 @@ Follow these steps to run the measurement tool with your image file as input:
 3. **Install Dependencies**  
    Ensure you have Python installed on your machine, then use `pip` to install the required libraries:
 
-   > pip install pillow numpy matplotlib scipy opencv-python
+   > pip install pillow "numpy>=1.16.5,<1.23.0" matplotlib scipy opencv-python
 
    If additional dependencies are required, they will be listed in the script's import statements. Install them in the same manner.
 
